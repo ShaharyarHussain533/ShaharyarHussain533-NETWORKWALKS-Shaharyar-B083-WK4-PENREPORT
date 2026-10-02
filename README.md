@@ -1,5 +1,6 @@
 # Mediroza General Hospital — Penetration Testing & Assessment Report
 
+**Prepared By:** Syed Shaharyar Hussain  
 ![Project Status](https://img.shields.io/badge/Status-Completed-success)
 ![Type](https://img.shields.io/badge/Type-Black--box%20Pentest-blue)
 ![Target](https://img.shields.io/badge/Target-https%3A%2F%2Fmedirozahospital.com-lightgrey)
@@ -14,8 +15,8 @@ The primary objective of the assessment was to evaluate the application's overal
 
 ### Key Findings Summary
 * **Authentication Bypass via SQL Injection:** Unsanitized user input handling on the patient login portal allowed an unauthenticated attacker to bypass login validation and access patient records[cite: 12, 13].
-* **Exfiltration of Confidential Patient Reports:** Three encrypted pathology laboratory reports containing sensitive medical details were retrieved[cite: 2, 4, 6, 8, 12, 13].
-* **Weak PDF Encryption:** File-level encryption on all three patient reports relied on trivial dictionary passwords, enabling offline password recovery[cite: 5, 7, 9, 12, 14].
+* **Exfiltration of Confidential Patient Reports:** Three pathology laboratory reports containing sensitive medical details were retrieved[cite: 2, 4, 6, 8, 12, 13].
+* **Weak PDF Protection:** Password protection on all three patient reports relied on trivial dictionary passwords, enabling offline password recovery[cite: 5, 7, 9, 12, 14].
 * **Exposure of Database Backup & Staff PII:** Examination of document metadata led to the discovery of an internal SQL backup file containing complete staff HR records, including national ID numbers and salary details[cite: 1, 3, 12, 15].
 
 ---
@@ -28,8 +29,8 @@ The primary objective of the assessment was to evaluate the application's overal
 └─────────────────┘     └─────────────────┘     └─────────────────┘     └─────────────────┘
 
 
-* **Milestone 1: Initial Access & Authentication Bypass** — Identify entry points, bypass authentication on `/patient/login.php`, and retrieve encrypted lab reports[cite: 12, 13].
-* **Milestone 2: Data Extraction & PDF Decryption** — Extract file hashes and recover cleartext contents for all 3 patient PDF files[cite: 12, 14].
+* **Milestone 1: Initial Access & Authentication Bypass** — Identify entry points, bypass authentication on `/patient/login.php`, and retrieve lab reports[cite: 12, 13].
+* **Milestone 2: Data Extraction & PDF Access** — Extract file hashes and recover cleartext contents for all 3 patient PDF files[cite: 12, 14].
 * **Milestone 3: Critical Data Exposure Analysis** — Analyze document properties, correlate metadata (`j.malik`), and extract internal employee/shareholder records from server backup files[cite: 1, 3, 12, 15].
 * **Milestone 4: Reporting & Remediation** — Document findings, assign risk ratings, and outline actionable security remediation steps[cite: 16].
 
@@ -46,8 +47,8 @@ The primary objective of the assessment was to evaluate the application's overal
 
 ---
 
-### Finding M2: Weak PDF Document Encryption Keys
-All three retrieved PDF files were protected using standard PDF R3 / 128-bit (MD5 + RC4) encryption[cite: 7, 9, 14]. Offline dictionary attacks successfully recovered all passwords[cite: 5, 7, 9, 14]:
+### Finding M2: Weak PDF Document Password Protection
+All three retrieved PDF files were protected using standard PDF password security[cite: 7, 9, 14]. Offline dictionary attacks successfully recovered all passwords[cite: 5, 7, 9, 14]:
 
 1. **`patient_report_1.pdf`**
    * **Password:** `123456`[cite: 9]
@@ -103,21 +104,17 @@ All three retrieved PDF files were protected using standard PDF R3 / 128-bit (MD
 ### Vulnerability Severity Breakdown
 1. **SQL Injection (`/patient/login.php`):** **CRITICAL** — Allows complete authentication bypass and access to patient medical records[cite: 12, 13, 16].
 2. **Database Backup Exposure (`mediroza_db_backup_2019.sql`):** **CRITICAL** — Unprotected storage of full staff identities and financial data[cite: 1, 15, 16].
-3. **Weak Document Encryption Keys:** **HIGH** — Trivial passwords allow rapid offline decryption of protected medical PDF reports[cite: 5, 7, 9, 14, 16].
+3. **Weak Document Passwords:** **HIGH** — Trivial passwords allow rapid offline access to protected medical PDF reports[cite: 5, 7, 9, 14, 16].
 4. **Information Disclosure via Metadata:** **MEDIUM** — Internal system user accounts (`j.malik`) leaked in document metadata[cite: 1, 3, 15, 16].
 
 ### Remediation Guidance
 1. **Implement Prepared Statements:** Use parameterized SQL queries across all database handlers to neutralize SQL injection flaws[cite: 13].
 2. **Remove Exposed Backups:** Store database dumps (`.sql`) in secured, off-site environments with restricted access controls[cite: 1].
-3. **Strengthen Document Encryption:** Enforce strong, randomly generated passwords or public-key encryption (AES-256) for all exported medical reports[cite: 5, 7, 9, 14].
+3. **Strengthen Document Protection:** Enforce strong, randomly generated passwords for all exported medical reports[cite: 5, 7, 9, 14].
 4. **Sanitize Document Metadata:** Configure PDF export utilities to strip internal system usernames and metadata attributes prior to publishing documents[cite: 2, 3].
 
 ---
 
 ## ⚠️ Disclaimer
 
-> This project was conducted in a controlled testing environment for educational and authors advice
-
-
-Syed Shaharyar Hussain
-B083
+> This project was conducted in a controlled testing environment for educational and
