@@ -1,120 +1,331 @@
-# Mediroza General Hospital — Penetration Testing & Assessment Report
+# Mediroza General Hospital
 
-**Prepared By:** Syed Shaharyar Hussain  
-![Project Status](https://img.shields.io/badge/Status-Completed-success)
-![Type](https://img.shields.io/badge/Type-Black--box%20Pentest-blue)
-![Target](https://img.shields.io/badge/Target-https%3A%2F%2Fmedirozahospital.com-lightgrey)
+## Penetration Testing & Security Assessment Report
 
----
-
-## 📄 Executive Summary
-
-This document compiles the findings, evidence, and remediation guidance for a 5-day black-box penetration testing assessment conducted against **Mediroza General Hospital** (`https://medirozahospital.com`)[cite: 10, 11, 17].
-
-The primary objective of the assessment was to evaluate the application's overall security controls, test authentication mechanisms, evaluate sensitive file protections, and assess the risk of unauthorized access to Protected Health Information (PHI) and Personally Identifiable Information (PII)[cite: 11, 12].
-
-### Key Findings Summary
-* **Authentication Bypass via SQL Injection:** Unsanitized user input handling on the patient login portal allowed an unauthenticated attacker to bypass login validation and access patient records[cite: 12, 13].
-* **Exfiltration of Confidential Patient Reports:** Three pathology laboratory reports containing sensitive medical details were retrieved[cite: 2, 4, 6, 8, 12, 13].
-* **Weak PDF Protection:** Password protection on all three patient reports relied on trivial dictionary passwords, enabling offline password recovery[cite: 5, 7, 9, 12, 14].
-* **Exposure of Database Backup & Staff PII:** Examination of document metadata led to the discovery of an internal SQL backup file containing complete staff HR records, including national ID numbers and salary details[cite: 1, 3, 12, 15].
+**Prepared By:** Syed Shaharyar Hussain
+**Assessment Type:** Black-Box Penetration Testing
+**Target:** https://medirozahospital.com
+**Assessment Duration:** 5 Days
+**Project Status:** Completed
 
 ---
 
-## 🎯 Assessment Scope & Milestones
+## 1. Executive Summary
 
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Milestone 1   │ ──► │   Milestone 2   │ ──► │   Milestone 3   │ ──► │   Milestone 4   │
-│ Initial Access  │     │ Data Extraction │     │ Server Exposure │     │ Pentest Report  │
-└─────────────────┘     └─────────────────┘     └─────────────────┘     └─────────────────┘
+This report presents the findings of a five-day black-box penetration testing assessment conducted against the Mediroza General Hospital web application.
 
+The assessment focused on evaluating the application's authentication mechanisms, input validation, protection of sensitive documents, exposure of confidential information, and overall security posture.
 
-* **Milestone 1: Initial Access & Authentication Bypass** — Identify entry points, bypass authentication on `/patient/login.php`, and retrieve lab reports[cite: 12, 13].
-* **Milestone 2: Data Extraction & PDF Access** — Extract file hashes and recover cleartext contents for all 3 patient PDF files[cite: 12, 14].
-* **Milestone 3: Critical Data Exposure Analysis** — Analyze document properties, correlate metadata (`j.malik`), and extract internal employee/shareholder records from server backup files[cite: 1, 3, 12, 15].
-* **Milestone 4: Reporting & Remediation** — Document findings, assign risk ratings, and outline actionable security remediation steps[cite: 16].
+The assessment identified several significant security weaknesses, including:
 
----
+* Authentication bypass through SQL injection.
+* Unauthorized access to patient laboratory reports.
+* Weak password protection on sensitive PDF documents.
+* Exposure of an internal database backup containing staff information.
+* Disclosure of internal system information through document metadata.
 
-## 🔍 Comprehensive Findings & Technical Analysis
-
-### Finding M1: Authentication Bypass via SQL Injection
-* **Target Endpoint:** `/patient/login.php`[cite: 13]
-* **Vulnerable Parameter:** `Username`[cite: 13]
-* **Payload Used:** `admin' -- `[cite: 13]
-* **Mechanism:** The backend query constructed SQL statements using direct string concatenation without parameterization[cite: 13]. Submitting a single quote terminated the string literal, and the trailing comment sequence (`-- `) instructed the database engine to ignore the remainder of the query (including password validation)[cite: 13].
-* **Impact:** Unauthenticated access to the patient portal and exfiltration of 3 protected lab reports[cite: 12, 13].
+The identified vulnerabilities could allow an unauthorized attacker to gain access to protected medical information and sensitive organizational data.
 
 ---
 
-### Finding M2: Weak PDF Document Password Protection
-All three retrieved PDF files were protected using standard PDF password security[cite: 7, 9, 14]. Offline dictionary attacks successfully recovered all passwords[cite: 5, 7, 9, 14]:
+# 2. Assessment Scope
 
-1. **`patient_report_1.pdf`**
-   * **Password:** `123456`[cite: 9]
-   * **Patient Name:** Sipho Dlamini | **ID:** MG-P-10231 | **DOB:** 1984-06-12[cite: 8]
-   * **Referring Doctor:** Dr. Anita Naicker[cite: 8]
-   * **Key Finding:** White Cell Count elevated at **11.8 x10^9/L** (FLAG: **HIGH**)[cite: 8].
+The assessment covered the following areas:
 
-2. **`patient_report_2.pdf`**
-   * **Password:** `password`[cite: 7]
-   * **Patient Name:** Priya Reddy | **ID:** MG-P-10244 | **DOB:** 1991-02-28[cite: 6]
-   * **Referring Doctor:** Dr. Johan van der Merwe[cite: 6]
-   * **Key Finding:** Elevated Lipid Profile (Total Cholesterol **6.4 mmol/L**, LDL **4.1 mmol/L**, Triglycerides **1.8 mmol/L**)[cite: 6].
+* Patient portal authentication.
+* Web application input validation.
+* Access controls.
+* Patient laboratory reports.
+* PDF security mechanisms.
+* Document metadata.
+* Exposed database backup files.
+* Sensitive staff information.
 
-3. **`patient_report_3.pdf`**
-   * **Password:** `!@#$%^&`[cite: 5]
-   * **Patient Name:** Emily Thompson | **ID:** MG-P-10258 | **DOB:** 1978-09-03[cite: 4]
-   * **Referring Doctor:** Dr. Ahmed Kara[cite: 4]
-   * **Key Finding:** Low Haemoglobin (**11.4 g/dL**), Ferritin (**9 ug/L**), and Vitamin D (**42 nmol/L**)[cite: 4].
+The assessment was performed within an authorized and controlled testing environment.
 
 ---
 
-### Finding M3: Database Backup & Internal Staff Exposure
-* **Source Artifact:** `mediroza_db_backup_2019.sql` (Database: `mediroza_hr`, Table: `staff`)[cite: 1]
-* **Discovery Method:** Metadata analysis of `patient_report_3.pdf` revealed the author attribute set to `j.malik` (IT Systems Administrator Jameel Malik)[cite: 1, 3, 15].
-* **Impact:** Exposed personal identities, salary details, and South African National ID numbers for 30 staff members[cite: 1, 12, 15].
+# 3. Assessment Objectives
 
-#### Sample Extract of Exposed HR Data
+The primary objectives were to:
 
-| ID | Full Name | Job Title | Department | Email Address | Phone Number | National ID | Monthly Salary (ZAR) |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 1 | Dr. Rajesh Naidoo[cite: 1] | Chief Pathologist[cite: 1] | Diagnostics Lab[cite: 1] | `r.naidoo@medirozahospital.com`[cite: 1] | +27 82 101 2007[cite: 1] | 85021013011081[cite: 1] | R 138,000[cite: 1] |
-| 2 | Sarah Botha[cite: 1] | Chief Financial Officer[cite: 1] | Finance[cite: 1] | `s.botha@medirozahospital.com`[cite: 1] | +27 82 102 2014[cite: 1] | 85031023022082[cite: 1] | R 152,000[cite: 1] |
-| 3 | Dr. Johan van der Merwe[cite: 1] | Medical Director[cite: 1] | Management[cite: 1] | `j.merwe@medirozahospital.com`[cite: 1] | +27 82 103 2021[cite: 1] | 85041033033083[cite: 1] | R 160,000[cite: 1] |
-| 4 | Dr. Anita Naicker[cite: 1] | Consultant Cardiologist[cite: 1] | Cardiology[cite: 1] | `a.naicker@medirozahospital.com`[cite: 1] | +27 82 104 2028[cite: 1] | 85051043044084[cite: 1] | R 132,000[cite: 1] |
-| 5 | Dr. Ahmed Kara[cite: 1] | Consultant Physician[cite: 1] | Internal Medicine[cite: 1] | `a.kara@medirozahospital.com`[cite: 1] | +27 82 105 2035[cite: 1] | 85061053055085[cite: 1] | R 128,000[cite: 1] |
-| 9 | Jameel Malik[cite: 1] | IT Systems Administrator[cite: 1] | IT[cite: 1] | `j.malik@medirozahospital.com`[cite: 1] | +27 82 109 2063[cite: 1] | 85101093099080[cite: 1] | R 58,000[cite: 1] |
+1. Identify vulnerabilities in the patient authentication system.
+2. Determine whether authentication could be bypassed.
+3. Assess the application's protection of patient documents.
+4. Evaluate the strength of PDF password protection.
+5. Identify sensitive information exposed through files and metadata.
+6. Assess the potential impact of exposed database backups.
+7. Provide practical remediation recommendations.
 
 ---
 
-## 📊 Summary Table of Exfiltrated Assets
+# 4. Key Findings
 
-| File / Asset | Patient / Subject | Referring Doctor / Role | Password | Summary of Findings |
-| :--- | :--- | :--- | :--- | :--- |
-| `patient_report_1.pdf`[cite: 8] | Sipho Dlamini[cite: 8] | Dr. Anita Naicker[cite: 8] | `123456`[cite: 9] | Elevated White Cell Count (**11.8 x10^9/L**)[cite: 8] |
-| `patient_report_2.pdf`[cite: 2, 6] | Priya Reddy[cite: 6] | Dr. Johan van der Merwe[cite: 6] | `password`[cite: 7] | Elevated Lipid Profile (Cholesterol **6.4 mmol/L**)[cite: 6] |
-| `patient_report_3.pdf`[cite: 3, 4] | Emily Thompson[cite: 4] | Dr. Ahmed Kara[cite: 4] | `!@#$%^&`[cite: 5] | Low Haemoglobin (**11.4 g/dL**), Low Ferritin (**9 ug/L**)[cite: 4] |
-| `mediroza_db_backup_2019.sql`[cite: 1] | 30 Staff Members[cite: 1] | Hospital Personnel[cite: 1] | None (Unprotected)[cite: 1] | Complete HR directory, payroll, and National IDs[cite: 1] |
-
----
-
-## 🛡️ Risk Rating & Remediation Roadmap
-
-### Vulnerability Severity Breakdown
-1. **SQL Injection (`/patient/login.php`):** **CRITICAL** — Allows complete authentication bypass and access to patient medical records[cite: 12, 13, 16].
-2. **Database Backup Exposure (`mediroza_db_backup_2019.sql`):** **CRITICAL** — Unprotected storage of full staff identities and financial data[cite: 1, 15, 16].
-3. **Weak Document Passwords:** **HIGH** — Trivial passwords allow rapid offline access to protected medical PDF reports[cite: 5, 7, 9, 14, 16].
-4. **Information Disclosure via Metadata:** **MEDIUM** — Internal system user accounts (`j.malik`) leaked in document metadata[cite: 1, 3, 15, 16].
-
-### Remediation Guidance
-1. **Implement Prepared Statements:** Use parameterized SQL queries across all database handlers to neutralize SQL injection flaws[cite: 13].
-2. **Remove Exposed Backups:** Store database dumps (`.sql`) in secured, off-site environments with restricted access controls[cite: 1].
-3. **Strengthen Document Protection:** Enforce strong, randomly generated passwords for all exported medical reports[cite: 5, 7, 9, 14].
-4. **Sanitize Document Metadata:** Configure PDF export utilities to strip internal system usernames and metadata attributes prior to publishing documents[cite: 2, 3].
+| ID | Finding                                          | Severity     |
+| -- | ------------------------------------------------ | ------------ |
+| M1 | Authentication Bypass via SQL Injection          | **Critical** |
+| M2 | Weak Password Protection on Patient Reports      | **High**     |
+| M3 | Database Backup and Staff Information Exposure   | **Critical** |
+| M4 | Information Disclosure Through Document Metadata | **Medium**   |
 
 ---
 
-## ⚠️ Disclaimer
+# 5. Finding M1 — Authentication Bypass via SQL Injection
 
-> This project was conducted in a controlled testing environment for educational and
+**Severity:** Critical
+**Affected Endpoint:** `/patient/login.php`
+**Affected Parameter:** Username
+
+### Description
+
+The patient login functionality was found to be vulnerable to SQL injection.
+
+User-supplied input was incorporated directly into a database query without adequate input validation or parameterized queries. This allowed the authentication logic to be manipulated by submitting specially crafted input.
+
+During testing, the following test payload successfully bypassed the authentication mechanism:
+
+```text
+admin' -- 
+```
+
+The injected SQL comment caused the remainder of the authentication query to be ignored, allowing access without providing a valid password.
+
+### Impact
+
+Successful exploitation could allow an unauthenticated attacker to:
+
+* Bypass the patient login mechanism.
+* Access restricted patient functionality.
+* Retrieve protected laboratory reports.
+* Potentially access additional patient information depending on application permissions.
+
+### Recommendation
+
+The application should:
+
+* Replace dynamically constructed SQL queries with prepared statements.
+* Use parameterized database queries.
+* Implement strict server-side input validation.
+* Apply least-privilege permissions to the application database account.
+* Implement security testing for all authentication-related database queries.
+
+---
+
+# 6. Finding M2 — Weak Password Protection on Patient Reports
+
+**Severity:** High
+**Affected Assets:** Patient laboratory PDF reports
+
+### Description
+
+Three patient laboratory reports were obtained during the assessment. Each report was protected with a PDF password; however, the passwords were sufficiently weak to be recovered through offline password testing.
+
+The recovered passwords were common or easily guessable values.
+
+### Affected Reports
+
+| Report                 | Patient        | Password   | Finding                                 |
+| ---------------------- | -------------- | ---------- | --------------------------------------- |
+| `patient_report_1.pdf` | Sipho Dlamini  | `123456`   | Elevated white cell count               |
+| `patient_report_2.pdf` | Priya Reddy    | `password` | Elevated lipid profile                  |
+| `patient_report_3.pdf` | Emily Thompson | `!@#$%^&`  | Low haemoglobin, ferritin and vitamin D |
+
+### Impact
+
+Weak document passwords significantly reduce the effectiveness of PDF encryption.
+
+An attacker who obtains a protected report could potentially recover its password offline and access confidential medical information without interacting with the hospital's systems.
+
+### Recommendation
+
+The organization should:
+
+* Use randomly generated, high-entropy passwords for sensitive documents.
+* Avoid dictionary words, common passwords, and predictable patterns.
+* Use modern encryption mechanisms where supported.
+* Establish a secure process for distributing document passwords.
+* Consider secure authenticated portals instead of password-protected email attachments or publicly accessible files.
+
+---
+
+# 7. Finding M3 — Database Backup and Staff Information Exposure
+
+**Severity:** Critical
+**Affected Asset:** `mediroza_db_backup_2019.sql`
+**Database:** `mediroza_hr`
+**Table:** `staff`
+
+### Description
+
+An internal SQL database backup was identified during the assessment.
+
+The backup contained sensitive information relating to hospital personnel, including:
+
+* Employee names.
+* Job titles.
+* Departments.
+* Email addresses.
+* Telephone numbers.
+* National identification numbers.
+* Salary information.
+
+The database contained records for approximately 30 staff members.
+
+### Sample Exposure
+
+| Employee                | Position                 | Department        | Monthly Salary |
+| ----------------------- | ------------------------ | ----------------- | -------------: |
+| Dr. Rajesh Naidoo       | Chief Pathologist        | Diagnostics Lab   |      R 138,000 |
+| Sarah Botha             | Chief Financial Officer  | Finance           |      R 152,000 |
+| Dr. Johan van der Merwe | Medical Director         | Management        |      R 160,000 |
+| Dr. Anita Naicker       | Consultant Cardiologist  | Cardiology        |      R 132,000 |
+| Dr. Ahmed Kara          | Consultant Physician     | Internal Medicine |      R 128,000 |
+| Jameel Malik            | IT Systems Administrator | IT                |       R 58,000 |
+
+### Impact
+
+Exposure of the database backup could result in:
+
+* Employee privacy violations.
+* Identity theft risks.
+* Financial and payroll information disclosure.
+* Targeted phishing attacks.
+* Social engineering attacks.
+* Further compromise of internal systems.
+
+### Recommendation
+
+Database backups should:
+
+* Never be stored within publicly accessible web directories.
+* Be stored in dedicated, access-controlled backup infrastructure.
+* Be encrypted both at rest and during transfer.
+* Have access restricted according to the principle of least privilege.
+* Be regularly audited for unauthorized exposure.
+* Be removed from production web servers.
+* Have retention policies and secure deletion procedures.
+
+---
+
+# 8. Finding M4 — Information Disclosure Through Document Metadata
+
+**Severity:** Medium
+
+### Description
+
+Metadata contained within one of the patient PDF documents disclosed an internal username associated with the hospital's IT environment.
+
+The metadata identified the account:
+
+```text
+j.malik
+```
+
+This information was associated with an internal IT administrator.
+
+### Impact
+
+Although metadata exposure alone does not provide direct system access, internal usernames can assist attackers during reconnaissance and social engineering activities.
+
+When combined with other vulnerabilities, such information may contribute to a larger attack chain.
+
+### Recommendation
+
+The organization should:
+
+* Remove unnecessary metadata from externally distributed documents.
+* Configure document-generation systems to strip author and application information.
+* Review documents before external publication.
+* Avoid exposing internal usernames, hostnames, software versions, or directory information.
+
+---
+
+# 9. Overall Risk Assessment
+
+The assessment identified vulnerabilities ranging from Medium to Critical severity.
+
+The most significant risks were the SQL injection vulnerability and exposure of the internal database backup. Together, these issues demonstrate weaknesses in both application-level security and sensitive data protection.
+
+The SQL injection vulnerability could allow unauthorized access to protected functionality, while the exposed database backup could disclose substantial amounts of confidential employee information.
+
+Weak PDF passwords further increase the risk associated with the exposure of patient reports.
+
+---
+
+# 10. Remediation Roadmap
+
+## Priority 1 — Immediate
+
+### Fix SQL Injection
+
+* Implement prepared statements throughout the application.
+* Review all database queries for similar vulnerabilities.
+* Validate and sanitize user input.
+* Perform security testing after remediation.
+
+### Remove Exposed Database Backups
+
+* Remove SQL backups from publicly accessible locations.
+* Move backups to secured storage.
+* Restrict access using authentication and authorization controls.
+* Encrypt backup files.
+
+---
+
+## Priority 2 — High
+
+### Strengthen Document Security
+
+* Replace weak passwords with strong randomly generated credentials.
+* Use modern encryption mechanisms.
+* Implement secure document-sharing mechanisms.
+* Review all previously generated sensitive documents.
+
+---
+
+## Priority 3 — Medium
+
+### Reduce Information Disclosure
+
+* Strip unnecessary PDF metadata.
+* Remove internal usernames and system information.
+* Review document-generation configurations.
+* Establish a document security review process.
+
+---
+
+# 11. Recommended Security Controls
+
+The following controls should be implemented as part of the hospital's broader security program:
+
+* Secure software development practices.
+* Regular vulnerability assessments and penetration testing.
+* Web application security testing.
+* Database access controls.
+* Encrypted backup storage.
+* Strong authentication mechanisms.
+* Least-privilege access controls.
+* Secure document handling procedures.
+* Centralized security logging and monitoring.
+* Regular security awareness training.
+* Incident response procedures.
+
+---
+
+# 12. Conclusion
+
+The penetration testing assessment identified several security weaknesses affecting authentication, sensitive document protection, database security, and information disclosure.
+
+The SQL injection vulnerability represents a critical application security issue because it can allow authentication bypass and unauthorized access to protected functionality.
+
+The exposed database backup presents another critical risk due to the amount of sensitive employee information contained within it. Weak PDF passwords further increase the likelihood of unauthorized access to confidential patient reports.
+
+Addressing these vulnerabilities should begin with securing the authentication mechanism and removing exposed database backups, followed by strengthening document protection and reducing unnecessary information disclosure.
+
+All identified vulnerabilities should be retested after remediation to verify that the security issues have been effectively resolved.
+
+---
+
+## 13. Disclaimer
+
+This assessment was conducted in a controlled and authorized environment for educational and security assessment purposes. The findings documented in this report represent observations made during the defined assessment period and scope.
